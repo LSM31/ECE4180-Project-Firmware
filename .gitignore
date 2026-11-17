@@ -67,9 +67,12 @@ vcpkg_installed/
 Testing/
 .cache/
 
-#platformio defaults
+# platformio defaults
 .pio
 .cache
 .dummy
 compile_commands.json
 .vscode/
+
+# misc
+.DS_Store
