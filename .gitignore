@@ -66,3 +66,10 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+#platformio defaults
+.pio
+.cache
+.dummy
+compile_commands.json
+.vscode/
