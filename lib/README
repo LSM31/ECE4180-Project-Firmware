@@ -1,46 +1,19 @@
+# lib/
 
-This directory is intended for project specific (private) libraries.
-PlatformIO will compile them to static libraries and link into the executable file.
+Project-private subsystem libraries. PlatformIO compiles each subfolder as its own library and links it in when something includes its header (Library Dependency Finder). Files sit directly in the folder (`lib/Motors/MotorController.hpp` + `.cpp`), with no extra `src/`/`include/` subfolders.
 
-The source code of each library should be placed in a separate directory
-("lib/your_library_name/[Code]").
+| Folder | Class | One-line job |
+|---|---|---|
+| `Display/` | `DisplayController` | Shows whatever status it is given on the LCD. |
+| `Motors/` | `MotorController` | Moves the 5 button servos through a press sequence. Nothing else. |
+| `Network/` | `WebInterface` | WiFi (GTother), MQTT over TLS to EMQX, NTP time sync. |
 
-For example, see the structure of the following example libraries `Foo` and `Bar`:
+The brew/schedule logic is **not** a library. It's application code in `src/BrewControl.cpp` (see `src/README.md`).
 
-|--lib
-|  |
-|  |--Bar
-|  |  |--docs
-|  |  |--examples
-|  |  |--src
-|  |     |- Bar.c
-|  |     |- Bar.h
-|  |  |- library.json (optional. for custom build options, etc) https://docs.platformio.org/page/librarymanager/config.html
-|  |
-|  |--Foo
-|  |  |- Foo.c
-|  |  |- Foo.h
-|  |
-|  |- README --> THIS FILE
-|
-|- platformio.ini
-|--src
-   |- main.c
-
-Example contents of `src/main.c` using Foo and Bar:
-```
-#include <Foo.h>
-#include <Bar.h>
-
-int main (void)
-{
-  ...
-}
-
-```
-
-The PlatformIO Library Dependency Finder will find automatically dependent
-libraries by scanning project source files.
-
-More information about PlatformIO Library Dependency Finder
-- https://docs.platformio.org/page/librarymanager/ldf.html
+## Rules for every library here
+1. **No library includes another library, or `BrewControl.hpp`.** If Display needs to know something Network received, `main.cpp` passes it along through a callback.
+2. **Libraries don't include project headers** (`include/BotConstants.hpp`, `secrets.hpp`). Pins, timings, and credentials come in as arguments to `begin(...)` from `main.cpp`. This keeps each library self-contained.
+3. **Libraries are "dumb".** They do their own hardware/service job and report events. Decisions (should we brew? is it time to sleep?) belong to BrewControl.
+4. **Non-blocking:** each exposes an `update()` that `loop()` calls, and returns quickly.
+5. **One instance each** via `etl::singleton<...>` (from the Embedded Template Library, already in `lib_deps`), like `MotorControllerInstance` in `Motors/MotorController.hpp`. Usage: `MotorControllerInstance::create(); MotorControllerInstance::instance().begin(...);`.
+6. Each library folder has its own `README.md` describing its interface and limits. Update it when the interface changes.

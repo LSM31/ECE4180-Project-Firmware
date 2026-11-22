@@ -1,37 +1,50 @@
+# include/
 
-This directory is intended for project header files.
+Headers for the **application** (code that lives in `src/`). Subsystem libraries keep their own headers inside their `lib/<Name>/` folder, not here.
 
-A header file is a file containing C declarations and macro definitions
-to be shared between several project source files. You request the use of a
-header file in your project source file (C, C++, etc) located in `src` folder
-by including it, with the C preprocessing directive `#include'.
+See the top-level `README.md` for the full architecture.
 
-```src/main.c
+## Files
 
-#include "header.h"
+### `BotConstants.hpp`: shared pins and tunables
+The single place for hardware pin numbers and "magic numbers" the app uses. Planned contents:
+- **Servo pins:** 5 GPIOs, one per Keurig button (3 cup-size buttons plus 2 others).
+- **Servo tuning:** PWM frequency (50 Hz), resolution, rest and press pulse widths per servo (measure with `env:motor_test`), press hold time, and the wait between presses in a sequence.
+- **Display pins** (for example, I2C SDA/SCL if a 16x2 I2C LCD is used).
+- **READY input pin**, if READY ends up being a physical button or sensor.
+- **Timing:** NTP resync interval (a few hours), sleep wake-up margin (5 to 10 min), MQTT reconnect backoff.
+- **MQTT topic strings** (`coffee/brew`, `coffee/status`, ...) so firmware code never repeats them as literals.
+- **Time zone string:** `"EST5EDT,M3.2.0,M11.1.0"`.
 
-int main (void)
-{
- ...
-}
+Rules:
+- Use `constexpr` values inside `namespace BotConstants`, not `#define` (a `#define` ignores the namespace).
+- **No secrets here.** This file is committed. Passwords, broker host/user, and the CA cert go in `secrets.hpp` (see below).
+- Libraries in `lib/` should not include this file. `main.cpp` reads the constants and passes them into each library's `begin(...)`.
+
+### `BrewControl.hpp`: brew/schedule logic interface
+The public interface of `src/BrewControl.cpp`, the application's decision layer. See `src/README.md` for its full responsibilities. In short:
+- holds the state machine: `WAITING_FOR_TIME`, `READY`, `BREWING`, `RELOAD`, (`ASLEEP` just before deep sleep);
+- owns the **one brew function** that both remote and scheduled brews call, and that checks READY first;
+- owns the brew schedule and sleep schedule, saved in NVS with `Preferences`;
+- tells `main` when it is time to deep sleep and for how long.
+
+Intended shape (names are suggestions, not final):
+```cpp
+void begin();                                   // load schedules from NVS
+void update();                                  // call every loop: due brews, sleep time
+bool requestBrew(BrewSize size, BrewSource src);// THE single brew entry point
+void onScheduleMessage(const char* json);       // from coffee/schedule/set
+void onSleepMessage(const char* json);          // from coffee/sleep/set
+void setReady(bool ready);                      // from whatever READY source we choose
+void setTimeValid(bool valid);                  // from Network after NTP sync
+// Hooks main wires up, so BrewControl never includes a lib/ header:
+void setPressSequenceHandler(...);              // -> MotorController
+void setStatusHandler(...);                     // -> Display + Network publish
+void setSleepHandler(...);                      // -> main's go-to-sleep routine
 ```
 
-Including a header file produces the same results as copying the header file
-into each source file that needs it. Such copying would be time-consuming
-and error-prone. With a header file, the related declarations appear
-in only one place. If they need to be changed, they can be changed in one
-place, and programs that include the header file will automatically use the
-new version when next recompiled. The header file eliminates the labor of
-finding and changing all the copies as well as the risk that a failure to
-find one copy will result in inconsistencies within a program.
-
-In C, the convention is to give header files names that end with `.h'.
-
-Read more about using header files in official GCC documentation:
-
-* Include Syntax
-* Include Operation
-* Once-Only Headers
-* Computed Includes
-
-https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html
+### `secrets.hpp` / `secrets.example.hpp`: NOT CREATED YET
+Planned: `secrets.example.hpp` is committed with placeholders. Each person copies it to `secrets.hpp` (gitignored) and fills in:
+- `WIFI_SSID` (`"GTother"`) and `WIFI_PASSWORD`
+- `MQTT_HOST`, `MQTT_PORT` (8883), `MQTT_USER`, `MQTT_PASSWORD` (the **ESP** broker user)
+- `MQTT_CA_CERT` (PEM string downloaded from the EMQX deployment overview)
