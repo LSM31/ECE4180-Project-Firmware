@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coffee Rig: LED Test</title>
+  <style>
+    :root { --bg:#f6f4f1; --card:#fff; --text:#1f1b16; --muted:#6b645b; --accent:#7a4a24; --ok:#2e7d32; --bad:#c62828; --border:#e3ddd5; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#16130f; --card:#211d18; --text:#f1ece5; --muted:#a39a8f; --accent:#d39a62; --ok:#66bb6a; --bad:#ef5350; --border:#3a332b; }
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--text);
+           font-family:system-ui,-apple-system,"Segoe UI",sans-serif; padding:16px; }
+    .card { width:100%; max-width:380px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px 24px; text-align:center; }
+    h1 { font-size:1.25rem; margin:0 0 4px; }
+    .sub { color:var(--muted); font-size:.9rem; margin:0 0 24px; }
+    .bulb { width:96px; height:96px; border-radius:50%; margin:0 auto 20px; background:#555; transition:background .2s, box-shadow .2s; }
+    .bulb.on { background:#fffbe6; box-shadow:0 0 40px 10px rgba(255,236,150,.7); }
+    .bulb.unknown { background:repeating-linear-gradient(45deg,#777 0 6px,#666 6px 12px); }
+    button { width:100%; font:inherit; font-size:1.05rem; font-weight:600; padding:14px; border-radius:12px; border:0; cursor:pointer;
+             background:var(--accent); color:#fff; margin-bottom:10px; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .row { display:flex; gap:10px; } .row button { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .status { display:flex; justify-content:space-between; font-size:.85rem; color:var(--muted); margin-top:16px; gap:8px; }
+    .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--muted); margin-right:6px; vertical-align:middle; }
+    .dot.ok { background:var(--ok); } .dot.bad { background:var(--bad); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Coffee Rig</h1>
+    <p class="sub">Onboard LED test</p>
+
+    <div id="bulb" class="bulb unknown" aria-hidden="true"></div>
+    <p id="ledText" class="sub">LED state unknown</p>
+
+    <button id="toggle" disabled>Toggle LED</button>
+    <div class="row">
+      <button id="on" disabled>On</button>
+      <button id="off" disabled>Off</button>
+    </div>
+
+    <div class="status">
+      <span><span id="brokerDot" class="dot"></span><span id="brokerText">Connecting to broker…</span></span>
+      <span><span id="espDot" class="dot"></span><span id="espText">ESP unknown</span></span>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

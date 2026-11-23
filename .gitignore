@@ -76,3 +76,6 @@ compile_commands.json
 
 # misc
 .DS_Store
+
+# credentials (copy include/secrets.example.hpp to this and fill it in)
+include/secrets.hpp
