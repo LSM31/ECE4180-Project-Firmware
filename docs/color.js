@@ -51,7 +51,10 @@ const client = mqtt.connect(cfg.brokerUrl, {
 
 client.on("connect", () => {
   setDot($("brokerDot"), $("brokerText"), true, "Broker connected");
-  client.subscribe([TOPIC_STATE, TOPIC_ONLINE], { qos: 1 });
+  client.subscribe([TOPIC_STATE, TOPIC_ONLINE], { qos: 1 }, (err) => {
+    // EMQX answers a subscribe its ACL forbids with "Unspecified error" (0x80) but keeps the connection open.
+    if (err) { console.error("subscribe denied", err); setDot($("espDot"), $("espText"), false, "Not allowed to subscribe (check EMQX ACL)"); }
+  });
   setEnabled(true);
 });
 client.on("reconnect", () => setDot($("brokerDot"), $("brokerText"), null, "Reconnecting…"));
